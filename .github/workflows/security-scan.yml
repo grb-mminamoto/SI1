@@ -33,6 +33,10 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+      - name: Baixar dependência do Servlet (javax.servlet-api)
+        run: |
+          wget https://repo1.maven.org/maven2/javax/servlet/javax.servlet-api/4.0.1/javax.servlet-api-4.0.1.jar -P libs/
+
       - name: Configurar CodeQL
         uses: github/codeql-action/init@v3
         with:
@@ -51,7 +55,7 @@ jobs:
             echo "Java puro detectado. Compilando com javac..."
             mkdir -p bin
             find . -name "*.java" > sources.txt
-            javac -d bin @sources.txt
+            javac -cp libs/javax.servlet-api-4.0.1.jar -d bin @sources.txt
           else
             echo "Nenhuma ferramenta de build detectada."
             exit 1
