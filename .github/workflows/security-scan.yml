@@ -41,7 +41,7 @@ jobs:
       - name: Configurar CodeQL
         uses: github/codeql-action/init@v3
         with:
-          languages: java
+          languages: java, javascript, typescript, csharp
           setup: true
           queries: +security-and-quality
 
