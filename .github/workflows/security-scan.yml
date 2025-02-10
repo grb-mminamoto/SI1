@@ -42,6 +42,7 @@ jobs:
         uses: github/codeql-action/init@v3
         with:
           languages: java
+          setup: true
           queries: +security-and-quality
 
       - name: Detectar ferramenta de build e compilar
