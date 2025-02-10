@@ -18,6 +18,8 @@ jobs:
   codeql-scan:
     name: CodeQL Security Scan
     runs-on: ubuntu-latest
+    outputs:
+      build_directory: ${{ steps.set_build_dir.outputs.BUILD_DIR }} # Define o diretório de build como output
     steps:
       - name: Checkout código
         uses: actions/checkout@v4
@@ -35,35 +37,32 @@ jobs:
           mkdir -p libs
           wget -q https://repo1.maven.org/maven2/javax/servlet/javax.servlet-api/4.0.1/javax.servlet-api-4.0.1.jar -P libs/
 
-      - name: Configurar CodeQL
-        uses: github/codeql-action/init@v3
-        with:
-          languages: java, javascript, typescript, csharp
-          setup: true
-          queries: +security-and-quality
-          database-mode: scan
-
       - name: Detectar ferramenta de build e compilar
+        id: set_build_dir
         run: |
           if [ -f "pom.xml" ]; then
             echo "Maven detectado. Executando mvn clean install..."
             mvn clean install -DskipTests
-            echo "DIRECTORY=target" >> $GITHUB_ENV
+            BUILD_DIR="target"
           elif [ -f "build.gradle" ] || [ -f "settings.gradle" ]; then
             echo "Gradle detectado. Executando ./gradlew build..."
             chmod +x gradlew
             ./gradlew build -x test
-            echo "DIRECTORY=build" >> $GITHUB_ENV
+            BUILD_DIR="build"
           elif ls *.java 1> /dev/null 2>&1; then
             echo "Java puro detectado. Compilando com javac..."
             mkdir -p bin
             find . -name "*.java" > sources.txt
             javac -cp .:libs/* -d bin @sources.txt
-            echo "DIRECTORY=bin" >> $GITHUB_ENV
+            BUILD_DIR="bin"
           else
             echo "Nenhuma ferramenta de build detectada."
             exit 1
           fi
+          
+          echo "Diretório de build definido como: $BUILD_DIR"
+          echo "BUILD_DIR=$BUILD_DIR" >> $GITHUB_ENV
+          echo "BUILD_DIR=$BUILD_DIR" >> $GITHUB_OUTPUT  # Define a saída para uso em outros jobs
 
       - name: Rodar análise CodeQL
         uses: github/codeql-action/analyze@v3
@@ -100,6 +99,7 @@ jobs:
   trivy-scan:
     name: Trivy Security Scan
     runs-on: ubuntu-latest
+    needs: codeql-scan  # Aguarda a execução do CodeQL antes de rodar
     steps:
       - name: Checkout código
         uses: actions/checkout@v4
@@ -112,19 +112,21 @@ jobs:
           tar -xzf trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz
           sudo mv trivy /usr/local/bin/
 
-      - name: Verificar se o diretório de build existe
+      - name: Definir diretório de build
         run: |
-          if [ -z "$DIRECTORY" ] || [ ! -d "$DIRECTORY" ]; then
+          BUILD_DIR="${{ needs.codeql-scan.outputs.build_directory }}"
+          if [ -z "$BUILD_DIR" ] || [ ! -d "$BUILD_DIR" ]; then
             echo "Nenhum diretório de build encontrado. Certifique-se de que a build foi concluída com sucesso."
             exit 1
           fi
-          echo "Diretório de build encontrado: $DIRECTORY"
+          echo "Diretório de build encontrado: $BUILD_DIR"
+          echo "BUILD_DIR=$BUILD_DIR" >> $GITHUB_ENV
 
       - name: Rodar Trivy no código-fonte
-        run: trivy fs --exit-code 1 --severity HIGH,CRITICAL $DIRECTORY/
+        run: trivy fs --exit-code 1 --severity HIGH,CRITICAL $BUILD_DIR/
 
       - name: Rodar Trivy em dependências do Maven
-        run: trivy fs --exit-code 1 --severity HIGH,CRITICAL --scan-all-unpacked $DIRECTORY/
+        run: trivy fs --exit-code 1 --severity HIGH,CRITICAL --scan-all-unpacked $BUILD_DIR/
 
       - name: Rodar Trivy no Dockerfile (se houver)
         run: |
