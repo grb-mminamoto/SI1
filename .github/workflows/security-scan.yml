@@ -24,9 +24,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Verificar estrutura do repositório
-        run: ls -la
-
       - name: Configurar Java 17
         uses: actions/setup-java@v3
         with:
@@ -44,9 +41,7 @@ jobs:
           languages: java, javascript, typescript, csharp
           setup: true
           queries: +security-and-quality
-
-      - name: Verificar CodeQL instalado
-        run: which codeql || echo "CodeQL não encontrado"
+          database-mode: scan
 
       - name: Detectar ferramenta de build e compilar
         run: |
@@ -79,20 +74,25 @@ jobs:
       - name: Checkout código
         uses: actions/checkout@v4
 
-      - name: Instalar pip
-        run: sudo apt-get install -y python3-pip
-
-      - name: Atualizar pip
-        run: pip install --upgrade pip
-
-      - name: Instalar Semgrep
-        run: pip install --upgrade semgrep
-
-      - name: Verificar instalação do Semgrep
-        run: semgrep --version
+      - name: Instalar e configurar Semgrep
+        run: |
+          sudo apt-get install -y python3-pip
+          pip install --upgrade pip
+          pip install --upgrade semgrep
+          echo "Criando regra customizada para evitar SELECT *"
+          mkdir -p .semgrep
+          cat <<EOF > .semgrep/avoid-select-all.yaml
+          rules:
+            - id: avoid-select-all
+              languages: [java]
+              message: "Evite usar 'SELECT *'. Especifique colunas para melhor performance e segurança."
+              severity: WARNING
+              patterns:
+                - pattern: sql.query("SELECT * FROM ...")
+          EOF
 
       - name: Rodar Semgrep com regras de segurança
-        run: semgrep --config=p/ci --exclude '**/.git/**' --verbose
+        run: semgrep --config=p/java --config=p/security-audit --config=.semgrep/avoid-select-all.yaml --exclude '**/.git/**' --verbose
 
   trivy-scan:
     name: Trivy Security Scan
@@ -109,8 +109,14 @@ jobs:
           tar -xzf trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz
           sudo mv trivy /usr/local/bin/
 
-      - name: Verificar instalação do Trivy
-        run: trivy --version
-
       - name: Rodar Trivy no código-fonte
         run: trivy fs --exit-code 1 --severity HIGH,CRITICAL .
+
+      - name: Rodar Trivy em dependências do Maven
+        run: trivy fs --exit-code 1 --severity HIGH,CRITICAL --scan-all-unpacked target/
+
+      - name: Rodar Trivy no Dockerfile (se houver)
+        run: |
+          if [ -f "Dockerfile" ]; then
+            trivy image --exit-code 1 --severity HIGH,CRITICAL $(awk '/^FROM/ {print $2}' Dockerfile)
+          fi
