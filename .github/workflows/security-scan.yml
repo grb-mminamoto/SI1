@@ -33,10 +33,10 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Baixar dependência do Servlet (javax.servlet-api)
+      - name: Criar diretório de libs e baixar dependências
         run: |
           mkdir -p libs
-          wget https://repo1.maven.org/maven2/javax/servlet/javax.servlet-api/4.0.1/javax.servlet-api-4.0.1.jar -P libs/
+          wget -q https://repo1.maven.org/maven2/javax/servlet/javax.servlet-api/4.0.1/javax.servlet-api-4.0.1.jar -P libs/
 
       - name: Configurar CodeQL
         uses: github/codeql-action/init@v3
@@ -44,6 +44,9 @@ jobs:
           languages: java
           setup: true
           queries: +security-and-quality
+
+      - name: Verificar CodeQL instalado
+        run: which codeql || echo "CodeQL não encontrado"
 
       - name: Detectar ferramenta de build e compilar
         run: |
@@ -58,18 +61,16 @@ jobs:
             echo "Java puro detectado. Compilando com javac..."
             mkdir -p bin
             find . -name "*.java" > sources.txt
-            javac -cp libs/javax.servlet-api-4.0.1.jar:. -d bin @sources.txt
+            javac -cp .:libs/* -d bin @sources.txt
           else
             echo "Nenhuma ferramenta de build detectada."
             exit 1
           fi
 
-      - name: Autodetectar código para CodeQL
-        run: |
-          codeql database trace-command -- dbcompile javac -cp libs/javax.servlet-api-4.0.1.jar -d bin @sources.txt
-
       - name: Rodar análise CodeQL
         uses: github/codeql-action/analyze@v3
+        with:
+          category: "/security-and-quality"
 
   semgrep-scan:
     name: Semgrep Security Scan
@@ -90,8 +91,8 @@ jobs:
       - name: Verificar instalação do Semgrep
         run: semgrep --version
 
-      - name: Rodar Semgrep
-        run: semgrep --config=auto --exclude '**/.git/**' --verbose
+      - name: Rodar Semgrep com regras de segurança
+        run: semgrep --config=p/ci --exclude '**/.git/**' --verbose
 
   trivy-scan:
     name: Trivy Security Scan
