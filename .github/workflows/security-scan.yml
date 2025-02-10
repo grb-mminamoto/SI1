@@ -56,8 +56,6 @@ jobs:
         uses: github/codeql-action/init@v3
         with:
           languages: java
-          # Desabilitar a configuração avançada que gera o bundle
-          tools: "default"
 
       - name: Executar análise CodeQL
         uses: github/codeql-action/analyze@v3
