@@ -48,24 +48,22 @@ jobs:
           if [ -f "pom.xml" ]; then
             echo "Maven detectado. Executando mvn clean install..."
             mvn clean install -DskipTests
-            export DIRECTORY="target"
+            echo "DIRECTORY=target" >> $GITHUB_ENV
           elif [ -f "build.gradle" ] || [ -f "settings.gradle" ]; then
             echo "Gradle detectado. Executando ./gradlew build..."
             chmod +x gradlew
             ./gradlew build -x test
-            export DIRECTORY="build"
+            echo "DIRECTORY=build" >> $GITHUB_ENV
           elif ls *.java 1> /dev/null 2>&1; then
             echo "Java puro detectado. Compilando com javac..."
             mkdir -p bin
             find . -name "*.java" > sources.txt
             javac -cp .:libs/* -d bin @sources.txt
-            export DIRECTORY="bin"
+            echo "DIRECTORY=bin" >> $GITHUB_ENV
           else
             echo "Nenhuma ferramenta de build detectada."
             exit 1
           fi
-          echo "Diretório de build definido como: $DIRECTORY"
-          echo "DIRECTORY=$DIRECTORY" >> $GITHUB_ENV
 
       - name: Rodar análise CodeQL
         uses: github/codeql-action/analyze@v3
