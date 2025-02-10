@@ -44,7 +44,7 @@ jobs:
         run: semgrep --version
 
       - name: Rodar Semgrep (todos os arquivos)
-        run: semgrep --config=auto --exclude '**/.git/**' --error
+        run: semgrep --config=auto --exclude '**/.git/**' --verbose
 
 
   trivy-scan:
