@@ -20,6 +20,11 @@ jobs:
     steps:
       - name: Checkout código
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Garante que todo o histórico do repositório seja baixado
+
+      - name: Verificar estrutura do repositório
+        run: ls -la  # Lista os arquivos para verificar a estrutura
 
       - name: Configurar Java 17
         uses: actions/setup-java@v3
@@ -32,8 +37,24 @@ jobs:
         with:
           languages: java
 
-      - name: Compilar código Java (Maven)
-        run: mvn clean install -DskipTests
+      - name: Detectar ferramenta de build e compilar
+        run: |
+          if [ -f "pom.xml" ]; then
+            # Maven
+            echo "Maven detectado. Executando mvn clean install..."
+            mvn clean install -DskipTests
+          elif [ -f "build.gradle" ] || [ -f "settings.gradle" ]; then
+            # Gradle
+            echo "Gradle detectado. Executando ./gradlew build..."
+            ./gradlew build -x test
+          elif ls *.java 1> /dev/null 2>&1; then
+            # Java puro (sem Maven ou Gradle)
+            echo "Java puro detectado. Compilando com javac..."
+            javac *.java
+          else
+            echo "Nenhuma ferramenta de build detectada. Arquivos Java não encontrados."
+            exit 1
+          fi
 
       - name: Executar análise CodeQL
         uses: github/codeql-action/analyze@v3
