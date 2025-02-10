@@ -1,0 +1,58 @@
+name: Security Scan (SAST)
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  codeql-scan:
+    name: CodeQL Security Scan
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Configurar CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: java
+
+      - name: Executar análise CodeQL
+        uses: github/codeql-action/analyze@v3
+
+  semgrep-scan:
+    name: Semgrep Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Instalar Semgrep
+        run: |
+          pip install semgrep
+
+      - name: Rodar Semgrep (Java e .NET)
+        run: semgrep --config=auto --error
+
+  trivy-scan:
+    name: Trivy Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Instalar Trivy
+        run: |
+          sudo apt-get install -y curl
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh
+
+      - name: Rodar Trivy no código-fonte
+        run: trivy fs --exit-code 1 --severity HIGH,CRITICAL .
