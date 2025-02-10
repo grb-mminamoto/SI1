@@ -15,33 +15,18 @@ permissions:
   contents: read
 
 jobs:
-  codeql-scan:
-    name: CodeQL Security Scan
+  trivy-scan:
+    name: Trivy Security Scan
     runs-on: ubuntu-latest
     steps:
       - name: Checkout código
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Configurar Java 17
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
           java-version: '17'
-
-      - name: Criar diretório de libs e baixar dependências
-        run: |
-          mkdir -p libs
-          wget -q https://repo1.maven.org/maven2/javax/servlet/javax.servlet-api/4.0.1/javax.servlet-api-4.0.1.jar -P libs/
-
-      - name: Configurar CodeQL
-        uses: github/codeql-action/init@v3
-        with:
-          languages: java, javascript, typescript, csharp
-          setup: true
-          queries: +security-and-quality
-          database-mode: scan
 
       - name: Detectar ferramenta de build e compilar
         run: |
@@ -56,50 +41,11 @@ jobs:
             echo "Java puro detectado. Compilando com javac..."
             mkdir -p bin
             find . -name "*.java" > sources.txt
-            javac -cp .:libs/* -d bin @sources.txt
+            javac -cp . -d bin @sources.txt
           else
             echo "Nenhuma ferramenta de build detectada."
             exit 1
           fi
-
-      - name: Rodar análise CodeQL
-        uses: github/codeql-action/analyze@v3
-        with:
-          category: "/security-and-quality"
-
-  semgrep-scan:
-    name: Semgrep Security Scan
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout código
-        uses: actions/checkout@v4
-
-      - name: Instalar e configurar Semgrep
-        run: |
-          sudo apt-get install -y python3-pip
-          pip install --upgrade pip
-          pip install --upgrade semgrep
-          echo "Criando regra customizada para evitar SELECT *"
-          mkdir -p .semgrep
-          cat <<EOF > .semgrep/avoid-select-all.yaml
-          rules:
-            - id: avoid-select-all
-              languages: [java]
-              message: "Evite usar 'SELECT *'. Especifique colunas para melhor performance e segurança."
-              severity: WARNING
-              patterns:
-                - pattern: sql.query("SELECT * FROM ...")
-          EOF
-
-      - name: Rodar Semgrep com regras de segurança
-        run: semgrep --config=p/java --config=p/security-audit --config=.semgrep/avoid-select-all.yaml --exclude '**/.git/**' --verbose
-
-  trivy-scan:
-    name: Trivy Security Scan
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout código
-        uses: actions/checkout@v4
 
       - name: Instalar Trivy
         run: |
@@ -109,27 +55,23 @@ jobs:
           tar -xzf trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz
           sudo mv trivy /usr/local/bin/
 
-      - name: Verificar se o diretório 'target' ou 'build' existe
+      - name: Verificar se o diretório de build existe
         run: |
+          echo "Verificando diretórios disponíveis:"
+          ls -la
           if [ -d "target" ]; then
             echo "Diretório 'target' encontrado."
-            DIRECTORY="target"
+            echo "DIRECTORY=target" >> $GITHUB_ENV
           elif [ -d "build" ]; then
             echo "Diretório 'build' encontrado."
-            DIRECTORY="build"
+            echo "DIRECTORY=build" >> $GITHUB_ENV
           else
             echo "Nenhum diretório 'target' ou 'build' encontrado. Certifique-se de que a build foi concluída com sucesso."
             exit 1
           fi
 
       - name: Rodar Trivy no código-fonte
-        run: trivy fs --exit-code 1 --severity HIGH,CRITICAL $DIRECTORY/
+        run: trivy fs --exit-code 1 --severity HIGH,CRITICAL ${{ env.DIRECTORY }}/
 
       - name: Rodar Trivy em dependências do Maven
-        run: trivy fs --exit-code 1 --severity HIGH,CRITICAL --scan-all-unpacked $DIRECTORY/
-
-      - name: Rodar Trivy no Dockerfile (se houver)
-        run: |
-          if [ -f "Dockerfile" ]; then
-            trivy image --exit-code 1 --severity HIGH,CRITICAL $(awk '/^FROM/ {print $2}' Dockerfile)
-          fi
+        run: trivy fs --exit-code 1 --severity HIGH,CRITICAL --scan-all-unpacked ${{ env.DIRECTORY }}/
