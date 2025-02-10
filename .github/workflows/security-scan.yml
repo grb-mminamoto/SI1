@@ -35,12 +35,14 @@ jobs:
 
       - name: Baixar dependência do Servlet (javax.servlet-api)
         run: |
+          mkdir -p libs
           wget https://repo1.maven.org/maven2/javax/servlet/javax.servlet-api/4.0.1/javax.servlet-api-4.0.1.jar -P libs/
 
       - name: Configurar CodeQL
         uses: github/codeql-action/init@v3
         with:
           languages: java
+          queries: +security-and-quality
 
       - name: Detectar ferramenta de build e compilar
         run: |
@@ -55,11 +57,15 @@ jobs:
             echo "Java puro detectado. Compilando com javac..."
             mkdir -p bin
             find . -name "*.java" > sources.txt
-            javac -cp libs/javax.servlet-api-4.0.1.jar -d bin @sources.txt
+            javac -cp libs/javax.servlet-api-4.0.1.jar:. -d bin @sources.txt
           else
             echo "Nenhuma ferramenta de build detectada."
             exit 1
           fi
+
+      - name: Autodetectar código para CodeQL
+        run: |
+          codeql database trace-command -- dbcompile javac -cp libs/javax.servlet-api-4.0.1.jar -d bin @sources.txt
 
       - name: Rodar análise CodeQL
         uses: github/codeql-action/analyze@v3
