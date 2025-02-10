@@ -18,13 +18,14 @@ jobs:
   codeql-scan:
     name: CodeQL Security Scan
     runs-on: ubuntu-latest
-    outputs:
-      build_directory: ${{ steps.set_build_dir.outputs.BUILD_DIR }} # Define o diretório de build como output
     steps:
       - name: Checkout código
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Verificar estrutura do repositório
+        run: ls -la
 
       - name: Configurar Java 17
         uses: actions/setup-java@v3
@@ -36,39 +37,34 @@ jobs:
         run: |
           mkdir -p libs
           wget -q https://repo1.maven.org/maven2/javax/servlet/javax.servlet-api/4.0.1/javax.servlet-api-4.0.1.jar -P libs/
+      - name: Configurar CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: java
+          setup: true
+          queries: +security-and-quality
+
+      - name: Verificar CodeQL instalado
+        run: which codeql || echo "CodeQL não encontrado"
 
       - name: Detectar ferramenta de build e compilar
-        id: set_build_dir
         run: |
           if [ -f "pom.xml" ]; then
             echo "Maven detectado. Executando mvn clean install..."
             mvn clean install -DskipTests
-            BUILD_DIR="target"
           elif [ -f "build.gradle" ] || [ -f "settings.gradle" ]; then
             echo "Gradle detectado. Executando ./gradlew build..."
             chmod +x gradlew
             ./gradlew build -x test
-            BUILD_DIR="build"
           elif ls *.java 1> /dev/null 2>&1; then
             echo "Java puro detectado. Compilando com javac..."
             mkdir -p bin
             find . -name "*.java" > sources.txt
             javac -cp .:libs/* -d bin @sources.txt
-            BUILD_DIR="bin"
           else
             echo "Nenhuma ferramenta de build detectada."
             exit 1
           fi
-          
-          echo "Diretório de build definido como: $BUILD_DIR"
-          echo "BUILD_DIR=$BUILD_DIR" >> $GITHUB_ENV
-          echo "BUILD_DIR=$BUILD_DIR" >> $GITHUB_OUTPUT  # Define a saída para uso em outros jobs
-
-      - name: Inicializar CodeQL
-        uses: github/codeql-action/init@v3
-        with:
-          languages: java
-
       - name: Rodar análise CodeQL
         uses: github/codeql-action/analyze@v3
         with:
@@ -81,30 +77,24 @@ jobs:
       - name: Checkout código
         uses: actions/checkout@v4
 
-      - name: Instalar e configurar Semgrep
-        run: |
-          sudo apt-get install -y python3-pip
-          pip install --upgrade pip
-          pip install --upgrade semgrep
-          echo "Criando regra customizada para evitar SELECT *"
-          mkdir -p .semgrep
-          cat <<EOF > .semgrep/avoid-select-all.yaml
-          rules:
-            - id: avoid-select-all
-              languages: [java]
-              message: "Evite usar 'SELECT *'. Especifique colunas para melhor performance e segurança."
-              severity: WARNING
-              patterns:
-                - pattern: sql.query("SELECT * FROM ...")
-          EOF
+      - name: Instalar pip
+        run: sudo apt-get install -y python3-pip
+
+      - name: Atualizar pip
+        run: pip install --upgrade pip
+
+      - name: Instalar Semgrep
+        run: pip install --upgrade semgrep
+
+      - name: Verificar instalação do Semgrep
+        run: semgrep --version
 
       - name: Rodar Semgrep com regras de segurança
-        run: semgrep --config=p/java --config=p/security-audit --config=.semgrep/avoid-select-all.yaml --exclude '**/.git/**' --verbose
+        run: semgrep --config=p/ci --exclude '**/.git/**' --verbose
 
   trivy-scan:
     name: Trivy Security Scan
     runs-on: ubuntu-latest
-    needs: codeql-scan  # Aguarda a execução do CodeQL antes de rodar
     steps:
       - name: Checkout código
         uses: actions/checkout@v4
@@ -116,25 +106,8 @@ jobs:
           wget https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz
           tar -xzf trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz
           sudo mv trivy /usr/local/bin/
-
-      - name: Definir diretório de build
-        run: |
-          BUILD_DIR="${{ needs.codeql-scan.outputs.build_directory }}"
-          if [ -z "$BUILD_DIR" ] || [ ! -d "$BUILD_DIR" ]; then
-            echo "Nenhum diretório de build encontrado. Certifique-se de que a build foi concluída com sucesso."
-            exit 1
-          fi
-          echo "Diretório de build encontrado: $BUILD_DIR"
-          echo "BUILD_DIR=$BUILD_DIR" >> $GITHUB_ENV
+      - name: Verificar instalação do Trivy
+        run: trivy --version
 
       - name: Rodar Trivy no código-fonte
-        run: trivy fs --exit-code 1 --severity HIGH,CRITICAL $BUILD_DIR/
-
-      - name: Rodar Trivy em dependências do Maven
-        run: trivy fs --exit-code 1 --severity HIGH,CRITICAL --scan-all-unpacked $BUILD_DIR/
-
-      - name: Rodar Trivy no Dockerfile (se houver)
-        run: |
-          if [ -f "Dockerfile" ]; then
-            trivy image --exit-code 1 --severity HIGH,CRITICAL $(awk '/^FROM/ {print $2}' Dockerfile)
-          fi
+        run: trivy fs --exit-code 1 --severity HIGH,CRITICAL .
