@@ -33,6 +33,11 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+      - name: Configurar CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: java
+
       - name: Detectar ferramenta de build e compilar
         run: |
           if [ -f "pom.xml" ]; then
@@ -40,22 +45,19 @@ jobs:
             mvn clean install -DskipTests
           elif [ -f "build.gradle" ] || [ -f "settings.gradle" ]; then
             echo "Gradle detectado. Executando ./gradlew build..."
+            chmod +x gradlew
             ./gradlew build -x test
           elif ls *.java 1> /dev/null 2>&1; then
             echo "Java puro detectado. Compilando com javac..."
             mkdir -p bin
-            javac -d bin *.java
+            find . -name "*.java" > sources.txt
+            javac -d bin @sources.txt
           else
-            echo "Nenhuma ferramenta de build detectada. Arquivos Java não encontrados."
+            echo "Nenhuma ferramenta de build detectada."
             exit 1
           fi
 
-      - name: Configurar CodeQL
-        uses: github/codeql-action/init@v3
-        with:
-          languages: java
-
-      - name: Executar análise CodeQL
+      - name: Rodar análise CodeQL
         uses: github/codeql-action/analyze@v3
 
   semgrep-scan:
@@ -77,7 +79,7 @@ jobs:
       - name: Verificar instalação do Semgrep
         run: semgrep --version
 
-      - name: Rodar Semgrep (todos os arquivos)
+      - name: Rodar Semgrep
         run: semgrep --config=auto --exclude '**/.git/**' --verbose
 
   trivy-scan:
@@ -95,7 +97,7 @@ jobs:
           tar -xzf trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz
           sudo mv trivy /usr/local/bin/
 
-      - name: Verificar se Trivy foi instalado corretamente
+      - name: Verificar instalação do Trivy
         run: trivy --version
 
       - name: Rodar Trivy no código-fonte
