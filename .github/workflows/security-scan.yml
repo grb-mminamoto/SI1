@@ -48,7 +48,11 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Instalar Trivy
-        run: sudo apt update && sudo apt install -y trivy
+        run: |
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh
+
+      - name: Verificar se Trivy foi instalado corretamente
+        run: trivy --version
 
       - name: Rodar Trivy no código-fonte
         run: trivy fs --exit-code 1 --severity HIGH,CRITICAL .
