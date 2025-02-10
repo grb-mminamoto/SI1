@@ -109,11 +109,24 @@ jobs:
           tar -xzf trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz
           sudo mv trivy /usr/local/bin/
 
+      - name: Verificar se o diretório 'target' ou 'build' existe
+        run: |
+          if [ -d "target" ]; then
+            echo "Diretório 'target' encontrado."
+            DIRECTORY="target"
+          elif [ -d "build" ]; then
+            echo "Diretório 'build' encontrado."
+            DIRECTORY="build"
+          else
+            echo "Nenhum diretório 'target' ou 'build' encontrado. Certifique-se de que a build foi concluída com sucesso."
+            exit 1
+          fi
+
       - name: Rodar Trivy no código-fonte
-        run: trivy fs --exit-code 1 --severity HIGH,CRITICAL target/
+        run: trivy fs --exit-code 1 --severity HIGH,CRITICAL $DIRECTORY/
 
       - name: Rodar Trivy em dependências do Maven
-        run: trivy fs --exit-code 1 --severity HIGH,CRITICAL --scan-all-unpacked target/
+        run: trivy fs --exit-code 1 --severity HIGH,CRITICAL --scan-all-unpacked $DIRECTORY/
 
       - name: Rodar Trivy no Dockerfile (se houver)
         run: |
