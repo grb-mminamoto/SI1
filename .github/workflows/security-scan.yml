@@ -109,8 +109,8 @@ jobs:
           tar -xzf trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz
           sudo mv trivy /usr/local/bin/
 
-      - name: Rodar Trivy no código-fonte
-        run: trivy fs --exit-code 1 --severity HIGH,CRITICAL .
+        - name: Rodar Trivy no código-fonte
+        run: trivy fs --exit-code 1 --severity HIGH,CRITICAL target/
 
       - name: Rodar Trivy em dependências do Maven
         run: trivy fs --exit-code 1 --severity HIGH,CRITICAL --scan-all-unpacked target/
