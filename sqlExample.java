@@ -3,7 +3,7 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
 
-public class SqlInjectionExample {
+public class SqlExample {
     public static void main(String[] args) {
         String username = "user";  // Usuário fornecido pelo usuário
         String password = "password";  // Senha fornecida pelo usuário
