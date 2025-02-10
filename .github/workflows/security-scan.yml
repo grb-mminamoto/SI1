@@ -31,14 +31,21 @@ jobs:
       - name: Checkout código
         uses: actions/checkout@v4
 
-      - name: Instalar dependências
-        run: sudo apt update && sudo apt install -y python3-pip
+      - name: Instalar pip
+        run: sudo apt-get install -y python3-pip
+
+      - name: Atualizar pip
+        run: pip install --upgrade pip
 
       - name: Instalar Semgrep
         run: pip install --upgrade semgrep
 
-      - name: Rodar Semgrep (Java e .NET)
-        run: semgrep --config=auto --error
+      - name: Verificar instalação do Semgrep
+        run: semgrep --version
+
+      - name: Rodar Semgrep (todos os arquivos)
+        run: semgrep --config=auto --exclude '**/.git/**' --error
+
 
   trivy-scan:
     name: Trivy Security Scan
