@@ -59,6 +59,8 @@ jobs:
 
       - name: Executar análise CodeQL
         uses: github/codeql-action/analyze@v3
+        with:
+          upload: true  # Garante que o SARIF seja enviado sem bundling manual
 
   semgrep-scan:
     name: Semgrep Security Scan
