@@ -8,6 +8,11 @@ on:
     branches:
       - main
 
+permissions:
+  security-events: write
+  actions: read
+  contents: read
+
 jobs:
   codeql-scan:
     name: CodeQL Security Scan
@@ -16,10 +21,19 @@ jobs:
       - name: Checkout código
         uses: actions/checkout@v4
 
+      - name: Configurar Java 17
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
       - name: Configurar CodeQL
         uses: github/codeql-action/init@v3
         with:
           languages: java
+
+      - name: Compilar código Java (Maven)
+        run: mvn clean install -DskipTests
 
       - name: Executar análise CodeQL
         uses: github/codeql-action/analyze@v3
@@ -46,7 +60,6 @@ jobs:
       - name: Rodar Semgrep (todos os arquivos)
         run: semgrep --config=auto --exclude '**/.git/**' --verbose
 
-
   trivy-scan:
     name: Trivy Security Scan
     runs-on: ubuntu-latest
@@ -67,5 +80,3 @@ jobs:
 
       - name: Rodar Trivy no código-fonte
         run: trivy fs --exit-code 1 --severity HIGH,CRITICAL .
-
-
