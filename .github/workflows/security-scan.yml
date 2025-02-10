@@ -33,11 +33,6 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Configurar CodeQL
-        uses: github/codeql-action/init@v3
-        with:
-          languages: java
-
       - name: Detectar ferramenta de build e compilar
         run: |
           if [ -f "pom.xml" ]; then
@@ -57,10 +52,15 @@ jobs:
             exit 1
           fi
 
+      - name: Configurar CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: java
+          # Desabilitar a configuração avançada que gera o bundle
+          tools: "default"
+
       - name: Executar análise CodeQL
         uses: github/codeql-action/analyze@v3
-        with:
-          upload: true  # Garante que o SARIF seja enviado sem bundling manual
 
   semgrep-scan:
     name: Semgrep Security Scan
