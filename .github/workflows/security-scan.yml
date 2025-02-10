@@ -48,15 +48,18 @@ jobs:
           if [ -f "pom.xml" ]; then
             echo "Maven detectado. Executando mvn clean install..."
             mvn clean install -DskipTests
+            echo "BUILD_DIR=target" >> $GITHUB_ENV
           elif [ -f "build.gradle" ] || [ -f "settings.gradle" ]; then
             echo "Gradle detectado. Executando ./gradlew build..."
             chmod +x gradlew
             ./gradlew build -x test
+            echo "BUILD_DIR=build" >> $GITHUB_ENV
           elif ls *.java 1> /dev/null 2>&1; then
             echo "Java puro detectado. Compilando com javac..."
             mkdir -p bin
             find . -name "*.java" > sources.txt
             javac -cp .:libs/* -d bin @sources.txt
+            echo "BUILD_DIR=bin" >> $GITHUB_ENV
           else
             echo "Nenhuma ferramenta de build detectada."
             exit 1
@@ -109,24 +112,18 @@ jobs:
           tar -xzf trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz
           sudo mv trivy /usr/local/bin/
 
-      - name: Verificar se o diretório 'target' ou 'build' existe
+      - name: Verificar diretório de build
         run: |
-          if [ -d "target" ]; then
-            echo "Diretório 'target' encontrado."
-            DIRECTORY="target"
-          elif [ -d "build" ]; then
-            echo "Diretório 'build' encontrado."
-            DIRECTORY="build"
-          else
-            echo "Nenhum diretório 'target' ou 'build' encontrado. Certifique-se de que a build foi concluída com sucesso."
+          if [ -z "${{ env.BUILD_DIR }}" ] || [ ! -d "${{ env.BUILD_DIR }}" ]; then
+            echo "Nenhum diretório de build encontrado. Certifique-se de que a build foi concluída com sucesso."
             exit 1
           fi
 
       - name: Rodar Trivy no código-fonte
-        run: trivy fs --exit-code 1 --severity HIGH,CRITICAL $DIRECTORY/
+        run: trivy fs --exit-code 1 --severity HIGH,CRITICAL ${{ env.BUILD_DIR }}/
 
       - name: Rodar Trivy em dependências do Maven
-        run: trivy fs --exit-code 1 --severity HIGH,CRITICAL --scan-all-unpacked $DIRECTORY/
+        run: trivy fs --exit-code 1 --severity HIGH,CRITICAL --scan-all-unpacked ${{ env.BUILD_DIR }}/
 
       - name: Rodar Trivy no Dockerfile (se houver)
         run: |
