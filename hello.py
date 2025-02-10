@@ -1,9 +1,7 @@
-# hello_world.py
-import subprocess
+import os
 
 # Solicita entrada do usuário
-user_input = input("Digite seu nome: ")
+nome = input("Digite seu nome: ")
 
-# Executa um comando no sistema operacional usando a entrada do usuário
-command = f"echo Hello, {user_input}"
-subprocess.run(command, shell=True)  # Uso inseguro de shell=True com entrada do usuárioo
+# Vulnerabilidade: entrada do usuário sendo concatenada diretamente no comando do sistema
+os.system(f"echo Olá, {nome}")
