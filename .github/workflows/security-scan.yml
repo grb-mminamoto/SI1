@@ -64,6 +64,11 @@ jobs:
           echo "BUILD_DIR=$BUILD_DIR" >> $GITHUB_ENV
           echo "BUILD_DIR=$BUILD_DIR" >> $GITHUB_OUTPUT  # Define a saída para uso em outros jobs
 
+      - name: Inicializar CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: java
+
       - name: Rodar análise CodeQL
         uses: github/codeql-action/analyze@v3
         with:
