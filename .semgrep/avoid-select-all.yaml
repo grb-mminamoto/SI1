@@ -1,7 +1,0 @@
-rules:
-  - id: avoid-select-all
-    languages: [java]
-    message: "Evite usar 'SELECT *'. Especifique colunas para melhor performance e segurança."
-    severity: WARNING
-    patterns:
-      - pattern: sql.query("SELECT * FROM ...")
