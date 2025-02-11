@@ -13,8 +13,12 @@ public class SqlExample {
             Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/mydb", "root", "root");
 
             // Vulnerabilidade: SQL Injection
-            String query = "SELECT * FROM users WHERE username = '" + username + "' AND password = '" + password + "'";
-
+            String query = "SELECT * FROM usuarios WHERE nome = ? AND senha = ?";
+            PreparedStatement pstmt = conn.prepareStatement(query);
+            pstmt.setString(1, nome);
+            pstmt.setString(2, senha);
+            ResultSet rs = pstmt.executeQuery();
+            
             Statement stmt = conn.createStatement();
             ResultSet rs = stmt.executeQuery(query);
 
