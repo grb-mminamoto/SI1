@@ -38,6 +38,14 @@ jobs:
           mkdir -p libs
           wget -q https://repo1.maven.org/maven2/javax/servlet/javax.servlet-api/4.0.1/javax.servlet-api-4.0.1.jar -P libs/
 
+      - name: Instalar o CodeQL
+        run: |
+          # Instalar CodeQL se não estiver disponível
+          if ! command -v codeql &> /dev/null; then
+            echo "CodeQL não encontrado. Instalando CodeQL..."
+            curl -sSL https://github.com/github/codeql-action/releases/download/codeql-action-v2/codeql-action-v2-linux.tar.gz | tar -xz -C /usr/local/bin
+          fi
+
       - name: Configurar CodeQL
         uses: github/codeql-action/init@v3
         with:
@@ -83,7 +91,7 @@ jobs:
           skip-queries: false
           upload-database: true
           wait-for-processing: true
-          
+
   semgrep-scan:
     name: Semgrep Security Scan
     runs-on: ubuntu-latest
