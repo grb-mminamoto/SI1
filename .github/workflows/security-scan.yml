@@ -28,8 +28,12 @@ jobs:
         run: |
           if ! command -v codeql &> /dev/null; then
             echo "CodeQL não encontrado. Instalando CodeQL..."
-            # Baixar o arquivo correto para a instalação do CodeQL
-            curl -sSL https://github.com/github/codeql-action/releases/download/codeql-action-v2/codeql-action-v2-linux64.tar.gz | tar -xz -C /usr/local/bin
+            # Baixar a versão mais recente do CodeQL diretamente do GitHub Releases
+            CODEQL_RELEASE_URL="https://github.com/github/codeql-action/releases/download/codeql-action-v2/codeql-action-v2-linux64.tar.gz"
+            
+            # Baixar e extrair o arquivo correto
+            curl -L $CODEQL_RELEASE_URL -o codeql-action-v2-linux64.tar.gz
+            tar -xzvf codeql-action-v2-linux64.tar.gz -C /usr/local/bin
           else
             echo "CodeQL já está instalado."
           fi
