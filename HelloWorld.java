@@ -6,7 +6,7 @@ public class HelloWorld {
         System.out.print("Digite seu nome: ");
         String nome = scanner.nextLine();
 
-        // Vulnerabilidade: Execução de código arbitrário via Runtime.exec()
+        // Vulnerabilidade: Execuçãoo de código arbitrário via Runtime.exec()
         try {
             Process process = Runtime.getRuntime().exec("echo Olá, " + nome);
             process.waitFor();
