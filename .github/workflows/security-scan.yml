@@ -38,11 +38,10 @@ jobs:
           mkdir -p libs
           wget -q https://repo1.maven.org/maven2/javax/servlet/javax.servlet-api/4.0.1/javax.servlet-api-4.0.1.jar -P libs/
       - name: Configurar CodeQL
-        uses: github/codeql-action/init@v4
+        uses: github/codeql-action/init@latest
         with:
           languages: java
           queries: +security-and-quality
-    
 
       - name: Verificar CodeQL instalado
         run: |
@@ -71,7 +70,7 @@ jobs:
             exit 1
           fi
       - name: Rodar análise CodeQL
-        uses: github/codeql-action/analyze@v4
+        uses: github/codeql-action/analyze@latest
         with:
           category: "/security-and-quality"
 
