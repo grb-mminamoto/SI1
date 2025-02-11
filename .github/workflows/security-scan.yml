@@ -76,18 +76,17 @@ jobs:
         uses: github/codeql-action/analyze@latest
         with:
           category: "/security-and-quality"
-
-  semgrep-scan:
+          
+semgrep-scan:
     name: Semgrep Security Scan
     runs-on: ubuntu-latest
     steps:
       - name: Checkout código
-        uses: actions/checkout@latest
+        uses: actions/checkout@v4
 
       - name: Instalar e atualizar Semgrep
         run: |
           pip install --upgrade semgrep
-
       - name: Verificar instalação do Semgrep
         run: semgrep --version
 
@@ -99,7 +98,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout código
-        uses: actions/checkout@latest
+        uses: actions/checkout@v4
 
       - name: Instalar a versão mais recente do Trivy
         run: |
@@ -107,19 +106,15 @@ jobs:
           
           # Buscar a versão mais recente no GitHub Releases
           TRIVY_VERSION=$(curl -s https://api.github.com/repos/aquasecurity/trivy/releases/latest | jq -r '.tag_name' | sed 's/v//')
-
           if [ -z "$TRIVY_VERSION" ]; then
             echo "Falha ao obter a versão mais recente do Trivy."
             exit 1
           fi
-
           echo "Instalando Trivy versão $TRIVY_VERSION..."
-
           wget -q https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz
           tar -xzf trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz
           sudo mv trivy /usr/local/bin/
           rm -f trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz
-
       - name: Verificar instalação do Trivy
         run: trivy --version
 
