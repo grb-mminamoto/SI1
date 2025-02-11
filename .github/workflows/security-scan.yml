@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout código
-        uses: actions/checkout@latest
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -28,7 +28,7 @@ jobs:
         run: ls -la
 
       - name: Configurar Java 17
-        uses: actions/setup-java@latest
+        uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
@@ -38,7 +38,7 @@ jobs:
           mkdir -p libs
           wget -q https://repo1.maven.org/maven2/javax/servlet/javax.servlet-api/4.0.1/javax.servlet-api-4.0.1.jar -P libs/
 
-      - name: Configurar CodeQL (sempre última versão)
+    - name: Configurar CodeQL
         uses: github/codeql-action/init@latest
         with:
           languages: java
@@ -50,7 +50,6 @@ jobs:
             echo "CodeQL não encontrado. Falhando o workflow."
             exit 1
           fi
-
       - name: Detectar ferramenta de build e compilar
         run: |
           if [ -f "pom.xml" ]; then
@@ -71,13 +70,12 @@ jobs:
             echo "Nenhuma ferramenta de build detectada."
             exit 1
           fi
-
       - name: Rodar análise CodeQL
-        uses: github/codeql-action/analyze@latest
+        uses: github/codeql-action/analyze@v4
         with:
           category: "/security-and-quality"
-          
-semgrep-scan:
+
+  semgrep-scan:
     name: Semgrep Security Scan
     runs-on: ubuntu-latest
     steps:
