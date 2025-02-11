@@ -70,7 +70,7 @@ jobs:
             exit 1
           fi
       - name: Rodar análise CodeQL
-        uses: github/codeql-action/analyze@latest
+        uses: github/codeql-action/analyze@v3
         with:
           category: "/security-and-quality"
 
