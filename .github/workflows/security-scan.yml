@@ -24,11 +24,12 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Verificar e instalar CodeQL se necessário
+      - name: Instalar CodeQL se necessário
         run: |
           if ! command -v codeql &> /dev/null; then
             echo "CodeQL não encontrado. Instalando CodeQL..."
-            curl -sSL https://github.com/github/codeql-action/releases/download/codeql-action-v2/codeql-action-v2-linux.tar.gz | tar -xz -C /usr/local/bin
+            # Baixar o arquivo correto para a instalação do CodeQL
+            curl -sSL https://github.com/github/codeql-action/releases/download/codeql-action-v2/codeql-action-v2-linux64.tar.gz | tar -xz -C /usr/local/bin
           else
             echo "CodeQL já está instalado."
           fi
@@ -75,7 +76,6 @@ jobs:
         uses: github/codeql-action/analyze@v2
         with:
           category: "/security-and-quality"
-
 
   semgrep-scan:
     name: Semgrep Security Scan
