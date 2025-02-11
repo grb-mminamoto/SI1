@@ -86,7 +86,8 @@ jobs:
 
       - name: Rodar Semgrep com regra para SELECT * de arquivo externo
         run: |
-          semgrep --config=semgrep-rules/select_star_rule.yml --exclude '**/.git/**' --verbose
+          echo "Executando Semgrep com a regra personalizada para SELECT *"
+          semgrep --config=./semgrep-rules/select_star_rule.yml --exclude '**/.git/**' --verbose
 
   trivy-scan:
     name: Trivy Security Scan
