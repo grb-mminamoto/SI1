@@ -1,6 +1,6 @@
 rules:
   - id: detect-select-star
-    pattern: SELECT *
+    pattern: 'SELECT\s+\*'
     message: 'Evite usar SELECT * em consultas SQL'
     languages: [generic]
     severity: WARNING
