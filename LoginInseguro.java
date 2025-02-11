@@ -15,9 +15,12 @@ public class LoginInseguro {
         try (Connection conn = DriverManager.getConnection("jdbc:sqlite:usuarios.db");
              Statement stmt = conn.createStatement()) {
 
-            // 🔴 Vulnerabilidade: Concatenação direta na query SQL
-            String query = "SELECT * FROM usuarios WHERE nome = '" + nome + "' AND senha = '" + senha + "'";
-            ResultSet rs = stmt.executeQuery(query);
+            // ✅ Usar PreparedStatement para evitar SQL Injection
+            String query = "SELECT * FROM usuarios WHERE nome = ? AND senha = ?";
+            PreparedStatement pstmt = conn.prepareStatement(query);
+            pstmt.setString(1, nome);
+            pstmt.setString(2, senha);
+            ResultSet rs = pstmt.executeQuery();
 
             if (rs.next()) {
                 System.out.println("Login bem-sucedido!");
