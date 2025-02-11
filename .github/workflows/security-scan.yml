@@ -37,8 +37,9 @@ jobs:
         run: |
           mkdir -p libs
           wget -q https://repo1.maven.org/maven2/javax/servlet/javax.servlet-api/4.0.1/javax.servlet-api-4.0.1.jar -P libs/
+
       - name: Configurar CodeQL
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/init@v3
         with:
           languages: java
           queries: +security-and-quality
@@ -49,6 +50,7 @@ jobs:
             echo "CodeQL não encontrado. Falhando o workflow."
             exit 1
           fi
+
       - name: Detectar ferramenta de build e compilar
         run: |
           if [ -f "pom.xml" ]; then
@@ -69,11 +71,19 @@ jobs:
             echo "Nenhuma ferramenta de build detectada."
             exit 1
           fi
+
       - name: Rodar análise CodeQL
         uses: github/codeql-action/analyze@v3
         with:
           category: "/security-and-quality"
-
+          output: "../results"
+          upload: always
+          cleanup-level: brutal
+          add-snippets: false
+          skip-queries: false
+          upload-database: true
+          wait-for-processing: true
+          
   semgrep-scan:
     name: Semgrep Security Scan
     runs-on: ubuntu-latest
