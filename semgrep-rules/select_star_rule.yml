@@ -2,5 +2,5 @@ rules:
   - id: detect-select-star
     pattern: SELECT *
     message: 'Evite usar SELECT * em consultas SQL'
-    languages: [python, java, javascript, sql]
+    languages: [generic]
     severity: WARNING
