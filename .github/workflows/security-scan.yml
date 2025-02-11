@@ -89,6 +89,15 @@ jobs:
           echo "Executando Semgrep com a regra personalizada para SELECT *"
           semgrep --config=./semgrep-rules/select_star_rule.yml --exclude '**/.git/**' --verbose
 
+      - name: Exibir versão do Semgrep
+        run: |
+          semgrep --version
+      
+      - name: Exibir conteúdo da regra
+        run: |
+          cat semgrep-rules/select_star_rule.yml
+
+
   trivy-scan:
     name: Trivy Security Scan
     runs-on: ubuntu-latest
