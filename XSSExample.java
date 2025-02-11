@@ -8,7 +8,7 @@ public class XSSExample extends HttpServlet {
 
         // Vulnerabilidade: XSS (não há sanitização ou escape do input do usuário)
         response.getWriter().println("<html><body>");
-        response.getWriter().println("<h1>Bem-vindo, " + userInput + "!</h1>");  // Usuário fornecido diretamente no HTML
+        response.getWriter().println("<h1>Bem-vindo, !</h1>");  // Usuário fornecido diretamente no HTML
         response.getWriter().println("</body></html>");
     }
 }
