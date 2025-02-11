@@ -77,11 +77,16 @@ jobs:
       - name: Instalar e atualizar Semgrep
         run: |
           pip install --upgrade semgrep
+          
       - name: Verificar instalação do Semgrep
         run: semgrep --version
 
       - name: Rodar Semgrep com regras de segurança
         run: semgrep --config=p/ci --exclude '**/.git/**' --verbose
+
+      - name: Rodar Semgrep com regra para SELECT * de arquivo externo
+        run: |
+          semgrep --config=semgrep-rules/select_star_rule.yml --exclude '**/.git/**' --verbose
 
   trivy-scan:
     name: Trivy Security Scan
